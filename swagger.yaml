@@ -1,0 +1,66 @@
+openapi: 3.0.0
+info:
+  title: API pour la gestion des étudiants
+  description: API permettant de gérer les opérations CRUD sur les étudiants
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /etudiants:
+    post:
+      summary: Créer un nouvel étudiant
+      description: Permet de créer un nouvel étudiant dans le système.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                  example: "Doe"
+                prenom:
+                  type: string
+                  example: "John"
+                cin:
+                  type: string
+                  example: "1234567890"
+                groupe:
+                  type: string
+                  example: "A"
+                mot_de_passe:
+                  type: string
+                  example: "password123"
+                email:
+                  type: string
+                  example: "john.doe@example.com"
+                groupeSpecialite:
+                  type: string
+                  example: "Informatique"
+                sexe:
+                  type: string
+                  example: "M"
+                telephone:
+                  type: string
+                  example: "123456789"
+                niveaux:
+                  type: string
+                  example: "Licence"
+                date_inscription:
+                  type: string
+                  format: date
+                  example: "2024-06-05"
+                departement:
+                  type: string
+                  example: "Informatique"
+                etat:
+                  type: string
+                  example: "en attente"
+      responses:
+        '201':
+          description: Étudiant créé avec succès
+        '400':
+          description: Mauvaise requête. Veuillez vérifier les données d'entrée.
+        '500':
+          description: Erreur interne du serveur. Veuillez réessayer plus tard.

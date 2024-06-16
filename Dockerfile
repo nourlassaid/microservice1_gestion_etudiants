@@ -9,8 +9,7 @@ RUN npm install
 
 COPY . .
 
-# Optionally, if your microservice requires any build step, perform it here
-# Example: RUN npm run build
+
 
 # Rebuild bcrypt module
 RUN npm rebuild bcrypt --build-from-source
@@ -22,14 +21,10 @@ WORKDIR /usr/src/app
 
 COPY --from=node /usr/src/app .
 
-# Expose port 3000 for Node.js application
-EXPOSE 3000
+# Expose port 3001 for Node.js application
+EXPOSE 4000
 
-# Set environment variables for MySQL connection
-ENV MYSQL_HOST=localhost
-ENV MYSQL_USER=root
-ENV MYSQL_PASSWORD=0000
-ENV MYSQL_DATABASE=formation_management
+
 
 # Start the Node.js application
 CMD ["node", "app.js"]

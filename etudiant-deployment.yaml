@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: etudiant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: nour0/etudiant_kubernet:latest # Correction apportée ici
+          ports:
+            - containerPort: 8333
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: auth
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8333
+      targetPort: 8333
+  type: LoadBalancer

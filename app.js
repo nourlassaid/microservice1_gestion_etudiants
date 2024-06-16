@@ -2,126 +2,136 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
+const { swaggerSpec, swaggerUi } = require('./swagger');
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
-// Middleware pour autoriser les requêtes provenant du port 4200 (le port de développement Angular)
-app.use(cors({
-  origin: 'http://localhost:4200',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
-// Configuration de MySQL
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '0000',
-  database: 'formation_management'
-});
-
-// Connexion à la base de données
-db.connect((err) => {
-  if (err) throw err;
-  console.log('Connected to database');
-});
-
-// Middleware pour parser les requêtes JSON
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
 
-// Opérations CRUD pour les étudiants
-// POST - Ajouter un nouvel étudiant
-app.post('/students', (req, res) => {
-  const studentData = req.body;
-  db.query('INSERT INTO etudiants SET ?', studentData, (err, result) => {
-    if (err) {
-      console.error('Error adding student: ', err);
-      res.status(500).json({ error: 'An error occurred while adding student' });
-    } else {
-      res.status(201).json({ message: 'Student added successfully', id: result.insertId });
-    }
-  });
+const client = require('prom-client');
+
+// Enable Prometheus metrics collection
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+// Create a histogram metric for utilisateur-ms service
+const utilisateurRequestDurationMicroseconds = new client.Histogram({
+  name: 'utilisateur_request_duration_seconds',
+  help: 'Duration of utilisateur-ms service HTTP requests in microseconds',
+  labelNames: ['method', 'route', 'code'],
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
 });
 
-// GET - Récupérer tous les étudiants
-app.get('/students', (req, res) => {
-  db.query('SELECT * FROM etudiants', (err, rows) => {
-    if (err) {
-      console.error('Error getting students: ', err);
-      res.status(500).json({ error: 'An error occurred while getting students' });
-    } else {
-      res.status(200).json(rows);
-    }
+// Register the histogram for utilisateur-ms service
+register.registerMetric(utilisateurRequestDurationMicroseconds);
+
+// Middleware to measure request duration for utilisateur-ms service
+app.use((req, res, next) => {
+  const end = utilisateurRequestDurationMicroseconds.startTimer();
+  res.on('finish', () => {
+    end({ method: req.method, route: req.url, code: res.statusCode });
   });
+  next();
 });
 
-// GET - Rechercher des étudiants par nom ou prénom
-app.get('/students/search', (req, res) => {
-  const searchTerm = req.query.search;
-  const queryString = `SELECT * FROM etudiants WHERE nom LIKE '%${searchTerm}%' OR prenom LIKE '%${searchTerm}%'`;
-  db.query(queryString, (err, rows) => {
-    if (err) {
-      console.error('Error searching for students: ', err);
-      res.status(500).json({ error: 'An error occurred while searching for students' });
-    } else {
-      res.status(200).json(rows);
-    }
-  });
+// Route to expose Prometheus metrics
+app.get('/metrics', async (req, res) => {
+  try {
+    const metrics = await register.metrics();
+    res.set('Content-Type', register.contentType);
+    res.end(metrics);
+  } catch (error) {
+    console.error('Error generating metrics:', error);
+    res.status(500).send('Error generating metrics');
+  }
 });
 
-
-// GET - Rechercher des étudiants par nom ou prénom
-app.get('/students/search/:term', (req, res) => {
-  const searchTerm = req.params.term;
-  const queryString = `SELECT * FROM etudiants WHERE nom LIKE '%${searchTerm}%' OR prenom LIKE '%${searchTerm}%'`;
-  db.query(queryString, (err, rows) => {
-    if (err) {
-      console.error('Error searching for students: ', err);
-      res.status(500).json({ error: 'An error occurred while searching for students' });
-    } else {
-      res.status(200).json(rows);
-    }
-  });
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '0000',
+  database: process.env.DB_NAME || 'formation_management'
 });
 
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('Error connecting to the database:', err);
+  } else {
+    console.log('Connected to the database');
+    connection.release();
+  }
+});
 
-// PUT - Mettre à jour un étudiant
-app.put('/students/:id', (req, res) => {
-  const id = req.params.id;
-  const newData = req.body;
-  db.query('UPDATE etudiants SET ? WHERE id = ?', [newData, id], (err, result) => {
+app.post('/etudiants', (req, res) => {
+  const etudiant = req.body;
+  console.log('Received student data:', etudiant); // Log incoming data
+
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0];
+
+  if (!etudiant.cin || !etudiant.nom || !etudiant.prenom || !etudiant.email) {
+    console.error('Missing required fields');
+    return res.status(400).send('Missing required fields');
+  }
+
+  pool.getConnection((err, connection) => {
     if (err) {
-      console.error('Error updating student: ', err);
-      res.status(500).json({ error: 'An error occurred while updating student' });
-    } else {
-      if (result.affectedRows > 0) {
-        res.status(200).json({ message: 'Student updated successfully' });
-      } else {
-        res.status(404).json({ error: 'Student not found' });
+      console.error('Error getting connection from pool:', err);
+      return res.status(500).send('Error getting connection from pool');
+    }
+
+    connection.query('SELECT * FROM etudiants WHERE cin = ?', etudiant.cin, (error, results) => {
+      if (error) {
+        console.error('Error checking for existing student:', error);
+        connection.release();
+        return res.status(500).send('Error checking for existing student');
       }
-    }
-  });
-});
-
-// DELETE - Supprimer un étudiant
-app.delete('/students/:id', (req, res) => {
-  const id = req.params.id;
-  db.query('DELETE FROM etudiants WHERE id = ?', id, (err, result) => {
-    if (err) {
-      console.error('Error deleting student: ', err);
-      res.status(500).json({ error: 'An error occurred while deleting student' });
-    } else {
-      if (result.affectedRows > 0) {
-        res.status(200).json({ message: 'Student deleted successfully' });
-      } else {
-        res.status(404).json({ error: 'Student not found' });
+      if (results.length > 0) {
+        console.log('Student with the same cin already exists');
+        connection.release();
+        return res.status(400).send('Student with the same cin already exists');
       }
-    }
+      connection.query('INSERT INTO etudiants SET ?', { ...etudiant, date_inscription: formattedDate }, (error, results) => {
+        connection.release();
+        if (error) {
+          console.error('Error inserting student:', error);
+          return res.status(500).send('Error inserting student');
+        }
+        console.log('Student inserted successfully');
+        res.status(201).send({ id: results.insertId, message: 'Student added successfully' });
+      });
+    });
   });
 });
 
-// Démarrer le serveur
+app.get('/etudiants', (req, res) => {
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error('Error getting connection from pool:', err);
+      return res.status(500).send('Error getting connection from pool');
+    }
+
+    connection.query('SELECT * FROM etudiants', (error, results) => {
+      connection.release();
+      if (error) {
+        console.error('Error fetching students:', error);
+        return res.status(500).send('Error fetching students');
+      }
+      res.status(200).json(results);
+    });
+  });
+});
+
+// Swagger documentation endpoint
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });
+
+module.exports = app;

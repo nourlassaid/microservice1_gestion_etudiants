@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-configmap
+  namespace: etudiant
+
+data:
+  formation_management.sql: |
+    -- phpMyAdmin SQL Dump
+    -- version 5.2.1
+    -- https://www.phpmyadmin.net/
+    --
+    -- Hôte : 127.0.0.1
+    -- Généré le : mer. 22 mai 2024 à 11:07
+    -- Version du serveur : 8.0.36
+    -- Version de PHP : 8.0.30
+
+    SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+    START TRANSACTION;
+    SET time_zone = "+00:00";
+
+    --
+    -- Base de données : `formation_management`
+    --
+
+    -- --------------------------------------------------------
+    --
+    --
+    -- Table structure for table `etudiants`
+    --
+
+    DROP TABLE IF EXISTS `etudiants`;
+    /*!40101 SET @saved_cs_client     = @@character_set_client */;
+    /*!50503 SET character_set_client = utf8mb4 */;
+    CREATE TABLE `etudiants` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `nom` varchar(255) DEFAULT NULL,
+      `prenom` varchar(255) DEFAULT NULL,
+      `groupe` varchar(255) DEFAULT NULL,
+      `cin` varchar(255) DEFAULT NULL,
+      `mot_de_passe` varchar(255) DEFAULT NULL,
+      `email` varchar(255) DEFAULT NULL,
+      `groupeSpecialite` varchar(255) DEFAULT NULL,
+      `sexe` varchar(10) DEFAULT NULL,
+      `telephone` varchar(255) DEFAULT NULL,
+      `niveaux` varchar(255) DEFAULT NULL,
+      `date_inscription` date DEFAULT NULL,
+      `departement` varchar(255) DEFAULT NULL,
+      `etat` enum('en attente','accepté','refusé') DEFAULT 'en attente',
+      `classe` varchar(255) DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `cin` (`cin`)
+    ) ENGINE=InnoDB AUTO_INCREMENT=152 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    /*!40101 SET character_set_client = @saved_cs_client */;
+
+    --
+    -- Dumping data for table `etudiants`
+    --
+
+    LOCK TABLES `etudiants` WRITE;
+    /*!40000 ALTER TABLE `etudiants` DISABLE KEYS */;
+    INSERT INTO `etudiants` VALUES 
+    (139,'Jane','Doe',NULL,NULL,'password','jane.doe@example.com',NULL,NULL,'123456789','1',NULL,'Informatique','en attente',NULL),
+    (140,'Doe','John',NULL,'unique-cin-by795iwxt','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (141,'Doe','John',NULL,'unique-cin-wir75k41z','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (142,'v','c',NULL,'unique-cin-d4musfccv','0000','09720775',NULL,NULL,'c','c',NULL,'c','en attente',NULL),
+    (143,'Doe','John',NULL,'unique-cin-ovz9vo51t','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (144,'Doe','John',NULL,'unique-cin-6jru81436','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (145,'Doe','John',NULL,'unique-cin-vsg4wgzcm','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (146,'Doe','John',NULL,'unique-cin-xu42xk1fv','password123','john.doe@example.com',NULL,NULL,'1234567890',NULL,NULL,'CS','en attente',NULL),
+    (147,'Doe','John',NULL,'unique-cin-mf6cnxlki','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (148,'Doe','John',NULL,'unique-cin-pstgzo0rc','password123','john.doe@example.com',NULL,NULL,'1234567890',NULL,NULL,'CS','en attente',NULL),
+    (149,'Doe','John',NULL,'unique-cin-4cahj4x5w','password123','john.doe@example.com',NULL,NULL,'1234567890',NULL,NULL,'CS','en attente',NULL),
+    (150,'Doe','John',NULL,'unique-cin-8o7456wom','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+   
+    (151,'Doe','John',NULL,'unique-cin-6q4bg2kwo','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL),
+    (152,'Doe','John',NULL,'unique-cin-t9x41vx0v','password123','john.doe@example.com',NULL,NULL,'1234567890','Undergraduate',NULL,'CS','en attente',NULL);
+
+    /*!40000 ALTER TABLE `etudiants` ENABLE KEYS */;
+    UNLOCK TABLES;
+    --
+    -- Index pour la table `etudiants`
+    --
+      ALTER TABLE `etudiants`
+      ADD PRIMARY KEY (`id`),
+      ADD UNIQUE KEY `cin` (`cin`);
+
+       --
+       
+     --
+     -- AUTO_INCREMENT pour la table `etudiants`
+     --
+     ALTER TABLE `etudiants`
+     MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
+
+    --

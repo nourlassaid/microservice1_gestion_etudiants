@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'gestion_etudiants-nodejs-app'
+    static_configs:
+      - targets: ['192.168.1.11:4000']
